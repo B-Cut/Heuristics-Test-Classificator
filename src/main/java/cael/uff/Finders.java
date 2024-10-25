@@ -1,0 +1,60 @@
+package cael.uff;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
+
+public abstract class Finders {
+    // Assumes test folder name is in the singular.
+    public static List<Path> testFoldersInRepo(Path repo, String testFolderName) throws IOException {
+        List<Path> paths = new ArrayList<>();
+
+        // Look for test folder or it's plural
+        try(
+                Stream<Path> pathStream = Files
+                        .find(repo, Integer.MAX_VALUE, (path, basicFileAttributes) ->
+                                path.getFileName().toString().equalsIgnoreCase(testFolderName)
+                                        || path.getFileName().toString().equalsIgnoreCase(testFolderName+"s"))
+        ){
+            paths = pathStream.toList();
+        }
+        return paths;
+    }
+
+    public static List<Path> subfoldersWithString(Path repo, String containedString) throws IOException {
+        List<Path> paths = new ArrayList<>();
+
+        // Checks if there are any subfolders that contain given string in their name
+        try(
+                Stream<Path> pathStream = Files
+                        .find(repo, Integer.MAX_VALUE, (path, basicFileAttributes) ->
+                                path
+                                        .getFileName().toString().toLowerCase()
+                                        .contains(containedString.toLowerCase()))
+        ){
+            paths = pathStream.toList();
+        }
+        return paths;
+    }
+    public static List<Path> subfoldersWithString(Path repo, String[] containedString) throws IOException {
+        List<Path> paths = new ArrayList<>();
+
+        // Checks if there are any subfolders that contain given string in their name for all strings
+        for(String s : containedString) {
+            try(
+                    Stream<Path> pathStream = Files
+                            .find(repo, Integer.MAX_VALUE, (path, basicFileAttributes) ->
+                                    path
+                                            .getFileName().toString().toLowerCase()
+                                            .contains(s.toLowerCase()))
+            ){
+                paths.addAll(pathStream.toList());
+            }
+        }
+
+        return paths;
+    }
+}
