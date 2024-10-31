@@ -95,19 +95,24 @@ class FilepathClassifierTest {
     @Test
     void classifyFiles(){
         String[] testDirs = new String[]{
-                "unit",
-                "integration",
-                "component",
                 "path_a/path_b"
         };
 
         String[] testFiles = new String[]{
                 "system.txt",
-                "unit/integration.java",
-                "component/ServerUnitTest.java",
+                "integration.java",
+                "ServerUnitTest.java",
                 "some_test.java",
-                "path_a/path_b/ServerE2e.java"
+                "ServerE2e.java",
+                "SystemTest.java",
+                "path_a/unit.java"
         };
+
+        int numUnitClasses = 1;
+        int numIntegrationClasses = 1;
+        int numSystemClasses = 2;
+        int numUnclassifiedClasses = 1;
+
 
         TestUtils.createDirectories(tempDir, "test");
         Result result = new Result();
@@ -122,9 +127,9 @@ class FilepathClassifierTest {
         }
         FilepathClassifier filepathClassifier = new FilepathClassifier();
         filepathClassifier.classifyFiles(root, result);
-        assertEquals(1, result.unitFiles.size());
-        assertEquals(1, result.integrationFiles.size());
-        assertEquals(1, result.systemFiles.size());
-        assertEquals(1, result.unclassifiedFiles.size());
+        assertEquals(numUnitClasses, result.unitFiles.size());
+        assertEquals(numIntegrationClasses, result.integrationFiles.size());
+        assertEquals(numSystemClasses, result.systemFiles.size());
+        assertEquals(numUnclassifiedClasses, result.unclassifiedFiles.size());
     }
 }
