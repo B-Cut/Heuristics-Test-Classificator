@@ -18,7 +18,12 @@ class FunctionClassifierTest {
                 , TestPhases.UNDEFINED
                 , result
         );
-        assertEquals(2, result.unclassifiedFunctions.size());
+        int numberOfUnclassifiedFunctions = 2;
+
+        assertEquals(numberOfUnclassifiedFunctions, result.unclassifiedFunctions.size());
+        assertEquals(0, result.unitFunctions.size());
+        assertEquals(0, result.integrationFunctions.size());
+        assertEquals(0, result.systemFunctions.size());
     }
 
     @Test
