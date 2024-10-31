@@ -24,6 +24,42 @@ public abstract class Finders {
         return paths;
     }
 
+    public static List<Path> filesContainingSubstring(Path folder, String substring) throws IOException {
+        List<Path> paths = new ArrayList<>();
+
+        try(
+                Stream<Path> pathStream = Files
+                        .find(folder, 1, (path, basicFileAttributes) ->
+                                Utils.containsCaseInsensitive(path.getFileName().toString(), substring))
+        ){
+            paths = pathStream.toList();
+        }
+
+        return paths;
+    }
+
+    public static List<Path> filesContainingSubstring(Path folder, String[] substrings) throws IOException {
+        List<Path> paths = new ArrayList<>();
+
+        try(
+                Stream<Path> pathStream = Files
+                        .find(folder, 1, (path, basicFileAttributes) -> {
+                            boolean contains = false;
+                            for(String substring : substrings){
+                                if( Utils.containsCaseInsensitive(path.getFileName().toString(), substring) ){
+                                    contains = true;
+                                }
+                            }
+                            return contains;
+                        });
+
+        ){
+            paths = pathStream.toList();
+        }
+
+        return paths;
+    }
+
     public static List<Path> subfoldersWithString(Path repo, String containedString) throws IOException {
         List<Path> paths = new ArrayList<>();
 
