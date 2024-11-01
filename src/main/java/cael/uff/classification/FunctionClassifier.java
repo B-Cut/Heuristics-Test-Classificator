@@ -4,6 +4,7 @@ import cael.uff.Utils;
 import spoon.Launcher;
 import spoon.SpoonAPI;
 import spoon.reflect.CtModel;
+import spoon.reflect.code.CtComment;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.visitor.chain.CtFunction;
@@ -17,6 +18,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 
 
 public class FunctionClassifier {
@@ -90,6 +92,44 @@ public class FunctionClassifier {
     }
 
 
-    public static void classifyFunctionByName(){}
-    public static void classifyFunctionByComment(){}
+    public static void classifyFunctionByName(Path file, Result result){
+        SpoonAPI spoon = new Launcher();
+        spoon.addInputResource(file.toString());
+        CtModel model = spoon.buildModel();
+        model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
+            ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
+               if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.UNIT_KEYWORD)){
+                   result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+               }
+               else if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.INTEGRATION_KEYWORD)){
+                   result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+               } else if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.SYSTEM_KEYWORDS)){
+                   result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+               }
+            });
+        });
+    }
+    public static void classifyFunctionByComment(Path file, Result result){
+        SpoonAPI spoon = new Launcher();
+        spoon.addInputResource(file.toString());
+        CtModel model = spoon.buildModel();
+        model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
+            ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
+                List<CtComment> comments = method.getComments();
+                for (CtComment comment : comments) {
+                    if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.UNIT_KEYWORD)){
+                        result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                        break;
+                    }
+                    else if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.INTEGRATION_KEYWORD)){
+                        result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                        break;
+                    } else if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.SYSTEM_KEYWORDS)){
+                        result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                        break;
+                    }
+                }
+            });
+        });
+    }
 }
