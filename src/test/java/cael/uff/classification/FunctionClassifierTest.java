@@ -1,6 +1,6 @@
 package cael.uff.classification;
 
-import org.junit.jupiter.api.BeforeEach;
+import cael.uff.classification.heuristics.FunctionClassifier;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Paths;

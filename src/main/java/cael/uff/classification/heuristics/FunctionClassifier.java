@@ -1,17 +1,18 @@
-package cael.uff.classification;
+package cael.uff.classification.heuristics;
 
 import cael.uff.Utils;
+import cael.uff.classification.FunctionInfo;
+import cael.uff.classification.Keywords;
+import cael.uff.classification.Result;
+import cael.uff.classification.TestPhases;
 import spoon.Launcher;
 import spoon.SpoonAPI;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtComment;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.visitor.chain.CtFunction;
 import spoon.reflect.visitor.chain.CtQueryable;
-import spoon.reflect.visitor.filter.TypeFilter;
 
-import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
@@ -92,10 +93,11 @@ public class FunctionClassifier {
     }
 
 
-    public static void classifyFunctionByName(Path file, Result result){
+    public static void classifyFunctionsInFile(Path file, Result result){
         SpoonAPI spoon = new Launcher();
         spoon.addInputResource(file.toString());
         CtModel model = spoon.buildModel();
+        // first we try to check them by name, if we can't, check by comments
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
             ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
                if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.UNIT_KEYWORD)){
@@ -105,31 +107,27 @@ public class FunctionClassifier {
                    result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
                } else if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.SYSTEM_KEYWORDS)){
                    result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+               } else{
+                   classifyFunctionByComment(method, file, result);
                }
             });
         });
     }
-    public static void classifyFunctionByComment(Path file, Result result){
-        SpoonAPI spoon = new Launcher();
-        spoon.addInputResource(file.toString());
-        CtModel model = spoon.buildModel();
-        model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
-            ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
-                List<CtComment> comments = method.getComments();
-                for (CtComment comment : comments) {
-                    if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.UNIT_KEYWORD)){
-                        result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                        break;
-                    }
-                    else if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.INTEGRATION_KEYWORD)){
-                        result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                        break;
-                    } else if(Utils.containsCaseInsensitive(comment.getContent(), Keywords.SYSTEM_KEYWORDS)){
-                        result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                        break;
-                    }
-                }
-            });
-        });
+    public static void classifyFunctionByComment(CtMethod<?> method, Path file, Result result) {
+        List<CtComment> comments = method.getComments();
+        for (CtComment comment : comments) {
+            if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.UNIT_KEYWORD)) {
+                result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                return;
+            } else if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.INTEGRATION_KEYWORD)) {
+                result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                return;
+            } else if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.SYSTEM_KEYWORDS)) {
+                result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+                return;
+            }
+        }
+
+        result.unclassifiedFunctions.add(new FunctionInfo(method.getSimpleName(), file));
     }
 }

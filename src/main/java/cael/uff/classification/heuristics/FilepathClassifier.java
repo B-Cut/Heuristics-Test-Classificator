@@ -1,7 +1,8 @@
-package cael.uff.classification;
+package cael.uff.classification.heuristics;
 
 import cael.uff.Finders;
 import cael.uff.Utils;
+import cael.uff.classification.Result;
 
 import java.io.IOException;
 import java.nio.file.*;

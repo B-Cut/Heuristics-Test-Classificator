@@ -5,18 +5,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Result {
-    List<Path> unitFolders = new ArrayList<>();
-    List<Path> integrationFolders = new ArrayList<>();
-    List<Path> systemFolders = new ArrayList<>();
-    List<Path> unclassifiedFolders = new ArrayList<>();
+    // TODO: Turn these into dictionaries
+    public List<Path> unitFolders = new ArrayList<>();
+    public List<Path> integrationFolders = new ArrayList<>();
+    public List<Path> systemFolders = new ArrayList<>();
+    public List<Path> unclassifiedFolders = new ArrayList<>();
 
-    List<Path> unitFiles = new ArrayList<>();
-    List<Path> integrationFiles = new ArrayList<>();
-    List<Path> systemFiles = new ArrayList<>();
-    List<Path> unclassifiedFiles = new ArrayList<>();
+    public List<Path> unitFiles = new ArrayList<>();
+    public List<Path> integrationFiles = new ArrayList<>();
+    public List<Path> systemFiles = new ArrayList<>();
+    public List<Path> unclassifiedFiles = new ArrayList<>();
 
-    List<FunctionInfo> unitFunctions = new ArrayList<>();
-    List<FunctionInfo> integrationFunctions = new ArrayList<>();
-    List<FunctionInfo> systemFunctions = new ArrayList<>();
-    List<FunctionInfo> unclassifiedFunctions = new ArrayList<>();
+    public List<FunctionInfo> unitFunctions = new ArrayList<>();
+    public List<FunctionInfo> integrationFunctions = new ArrayList<>();
+    public List<FunctionInfo> systemFunctions = new ArrayList<>();
+    public List<FunctionInfo> unclassifiedFunctions = new ArrayList<>();
 }

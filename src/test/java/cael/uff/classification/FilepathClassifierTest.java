@@ -1,6 +1,7 @@
 package cael.uff.classification;
 
 import cael.uff.TestUtils;
+import cael.uff.classification.heuristics.FilepathClassifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

@@ -6,10 +6,14 @@ package cael.uff;
         - System Tests
 */
 
+import cael.uff.classification.heuristics.FilepathClassifier;
+import cael.uff.classification.heuristics.FunctionClassifier;
+import cael.uff.classification.Result;
+import cael.uff.classification.TestPhases;
+
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 
 public class Main {
@@ -31,24 +35,44 @@ public class Main {
             return;
         }
 
+        Result res = new Result();
+
         // There are folders labeled as "test" in repository
         if(!testFolders.isEmpty()){
-            List<Path> unitFolders = new ArrayList<>();
-            List<Path> integrationFolders = new ArrayList<>();
-            List<Path> systemFolders = new ArrayList<>();
+            for(Path testFolder : testFolders){
+                FilepathClassifier classifier = new FilepathClassifier();
+                classifier.classifyFiles(testFolder, res);
+            }
 
-            for(Path folder : testFolders){
-                try {
-                    unitFolders.addAll(Finders.subfoldersWithString(folder, "unit"));
-                    integrationFolders.addAll(Finders.subfoldersWithString(folder, "integration"));
-                    systemFolders.addAll(Finders.subfoldersWithString(folder, new String[]{"application", "system"}));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return;
-                }
+            // First we classify the tests based on the identified file paths
+
+            // Not proper but works
+            for(Path unitFolder : res.unitFolders){
+                FunctionClassifier.massClassifyFunctionOnDirectory(unitFolder, TestPhases.UNIT, res);
+            }
+            for(Path integrationFolder : res.integrationFolders){
+                FunctionClassifier.massClassifyFunctionOnDirectory(integrationFolder, TestPhases.INTEGRATION, res);
+            }
+            for(Path systemFolders : res.unitFolders){
+                FunctionClassifier.massClassifyFunctionOnDirectory(systemFolders, TestPhases.SYSTEM, res);
+            }
+
+            for(Path unitFiles : res.unitFiles){
+                FunctionClassifier.massClassifyFunctionOnFile(unitFiles, TestPhases.UNIT, res);
+            }
+            for(Path integrationFiles : res.integrationFiles){
+                FunctionClassifier.massClassifyFunctionOnFile(integrationFiles, TestPhases.INTEGRATION, res);
+            }
+            for(Path systemFiles : res.systemFiles){
+                FunctionClassifier.massClassifyFunctionOnFile(systemFiles, TestPhases.SYSTEM, res);
+            }
+
+            // Then, we have to work with the unclassified files
+            for(Path unclassifiedFiles : res.unclassifiedFiles){
+                FunctionClassifier.classifyFunctionsInFile(unclassifiedFiles, res);
             }
         }
-
-
     }
+
+    // TODO: Serialize result
 }
