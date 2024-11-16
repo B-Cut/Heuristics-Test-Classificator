@@ -19,8 +19,9 @@ import java.util.*;
  * This class contains the necessary methods to classify a given test via the frameworks specified.
  */
 public class FrameworkClassifier {
-    private Map<String, List<String>> libraries;
+    private ArrayList<PhaseInfo> phases;
     private Map<String, List<String>> results;
+    private String undefinedPhase = "undefined";
     /***
      * Instantiates a <c>FrameworkClassifier</c> with a given libraries file. <c>libJson</c> must point to a JSON file
      * that containing a dictionary that has the classification type as a key and the value must be a list of libraries
@@ -35,12 +36,16 @@ public class FrameworkClassifier {
 
         ObjectMapper mapper = new ObjectMapper();
         try{
-            this.libraries = mapper.readValue(libsJson.toAbsolutePath().toString(), new TypeReference<Map<String, List<String>>>(){});
+            this.phases = mapper.readValue(libsJson.toAbsolutePath().toString(), new TypeReference<ArrayList<PhaseInfo>>(){});
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);
         }
         this.results = new HashMap<>();
+        for(PhaseInfo p : this.phases){
+            this.results.put(p.phase(), new ArrayList<>());
+        }
+        this.results.put(undefinedPhase, new ArrayList<>());
     }
 
     public void classifyFile(Path file){
@@ -51,14 +56,19 @@ public class FrameworkClassifier {
         model.filterChildren((el) -> el instanceof CtClass).forEach((CtClass<?> ctClass) -> {
             ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> ctMethod) -> {
                 ctMethod.filterChildren((el) -> el instanceof CtInvocation).forEach((CtInvocation<?> ctInvocation) -> {
-                    for( String key : libraries.keySet()){
-                        if (!results.containsKey(key)){
-                            results.put(key, new ArrayList<>());
-                        }
-                        if( libraries.get(key).contains(ctInvocation.getExecutable().getDeclaringType().toString()) ){
-                            results.get(key).add(file.toString() + ":" + ctMethod.getSimpleName());
+                    String phase = this.undefinedPhase;
+                    int priority = 0;
+                    for( PhaseInfo temp_phase : phases){
+                        if(temp_phase.libraries().contains(ctInvocation.getExecutable().getDeclaringType().toString())){
+                            if ( temp_phase.priority() > priority){
+                                priority = temp_phase.priority();
+                                phase = temp_phase.phase();
+                            }
                         }
                     }
+
+
+                    results.get(phase).add(file.toString() + ":" + ctMethod.getSimpleName());
                 });
             });
         });
