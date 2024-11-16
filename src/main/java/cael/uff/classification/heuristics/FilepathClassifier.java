@@ -8,14 +8,23 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
-public class FilepathClassifier {
-    public final String unitKeyword = "unit";
-    public final String integrationKeyword= "integration";
-    public final String[] systemKeywords = { "system", "E2E", "application" };
+public class FilepathClassifier extends HeuristicsClassifier{
+    public HashMap<String, List<Path>> directories = new HashMap<>();
+    public HashMap<String, List<Path>> files = new HashMap<>();
 
+    FilepathClassifier(Path keywordFile) {
+        super(keywordFile);
 
+        for( KeywordsInfo info : keywords ){
+            directories.put(info.phase(), new ArrayList<>());
+            files.put(info.phase(), new ArrayList<>());
+        }
+        directories.put(undefinedKeyword, new ArrayList<>());
+        files.put(undefinedKeyword, new ArrayList<>());
+    }
 
     public List<Path> subdirectoriesWithKeyword(Path root, String keyword){
         ArrayList<Path> subdirectories = new ArrayList<>();
@@ -78,18 +87,14 @@ public class FilepathClassifier {
             public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attr){
                 String name = directory.getFileName().toString();
 
-                if ( Utils.containsCaseInsensitive(name, unitKeyword) ){
-                    res.unitFolders.add(directory);
-                    return FileVisitResult.SKIP_SUBTREE;
-                } else if (Utils.containsCaseInsensitive(name, integrationKeyword)){
-                    res.integrationFolders.add(directory);
-                    return FileVisitResult.SKIP_SUBTREE;
-                } else if (Utils.containsCaseInsensitive( name, systemKeywords)){
-                    res.systemFolders.add(directory);
-                    return FileVisitResult.SKIP_SUBTREE;
-                } else{
-                    res.unclassifiedFolders.add(directory);
+                for ( KeywordsInfo info : keywords){
+                    if ( Utils.containsCaseInsensitive(name, info.keywords().toArray(new String[]{}))){
+                        directories.get(info.phase()).add(directory);
+                        return FileVisitResult.SKIP_SUBTREE;
+                    }
                 }
+
+                directories.get(undefinedKeyword).add(directory);
                 return FileVisitResult.CONTINUE;
             }
         };
@@ -107,54 +112,25 @@ public class FilepathClassifier {
      */
     public void classifyFiles(Path root, Result res){
         String fileExtension = ".java";
-
-        /*SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
-                String name = file.getFileName().toString();
-
-                if(!name.endsWith(fileExtension)){
-                    return FileVisitResult.CONTINUE;
-                }
-
-                if ( Utils.containsCaseInsensitive(name, unitKeyword) ){
-                    res.unitFiles.add(file);
-                } else if (Utils.containsCaseInsensitive(name, integrationKeyword)){
-                    res.integrationFiles.add(file);
-                } else if (Utils.containsCaseInsensitive( name, systemKeywords)){
-                    res.systemFiles.add(file);
-                } else{
-                    res.unclassifiedFiles.add(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-
-            // We don't want to go into subfolders since they will be included in the unclassifield folders in Result
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException {
-                return FileVisitResult.SKIP_SUBTREE;
-            }
-        };
         try{
-            Files.walkFileTree(root, visitor);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }*/try{
-            res.unitFiles = Finders.filesContainingSubstring(root, unitKeyword)
-                    .stream().filter((Path path) -> path.getFileName().toString().endsWith(fileExtension)).toList();
-            res.integrationFiles = Finders.filesContainingSubstring(root, integrationKeyword)
-                    .stream().filter((Path path) -> path.getFileName().toString().endsWith(fileExtension)).toList();
-            res.systemFiles = Finders.filesContainingSubstring(root, systemKeywords)
-                    .stream().filter((Path path) -> path.getFileName().toString().endsWith(fileExtension)).toList();
 
-            res.unclassifiedFiles = Files.find(root, 1, (path, basicFileAttributes) -> {
-                        return
-                                !res.unitFiles.contains(path)
-                                        && !res.integrationFiles.contains(path)
-                                        && !res.systemFiles.contains(path)
-                                        && !Files.isDirectory(path)
-                                        && path.getFileName().toString().endsWith(fileExtension);
-                    }).toList();
+            for( KeywordsInfo info : keywords ){
+                for ( String kw : info.keywords() ){
+                    files.get(info.phase()).addAll(
+                            Finders.filesContainingSubstring(root, kw)
+                                    .stream().filter((Path path) -> path.getFileName().toString().endsWith(fileExtension)).toList()
+                    );
+                }
+            }
+
+            files.get(undefinedKeyword).addAll(Files.find(root, 1, (path, basicFileAttributes) -> {
+                for (List<Path> foundFiles : files.values()) {
+                    if (foundFiles.contains(path)) {
+                        return false;
+                    }
+                }
+                return true;
+            }).toList());
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }

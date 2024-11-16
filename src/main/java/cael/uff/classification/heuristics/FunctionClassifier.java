@@ -19,12 +19,24 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
-public class FunctionClassifier {
+public class FunctionClassifier extends HeuristicsClassifier{
 
-    private static CtQueryable getClassesFromFile(Path path){
+    public HashMap<String, List<FunctionInfo>> classifiedFunctions = new HashMap<>();
+
+    FunctionClassifier(Path keywordFile) {
+        super(keywordFile);
+        for ( KeywordsInfo i : this.keywords) {
+            classifiedFunctions.put(i.phase(), new ArrayList<FunctionInfo>());
+        }
+        classifiedFunctions.put(undefinedKeyword, new ArrayList<>());
+    }
+
+    private CtQueryable getClassesFromFile(Path path){
         SpoonAPI spoon = new Launcher();
         // Makes sure we have a proper file
         spoon.addInputResource(path.toAbsolutePath().toString());
@@ -32,102 +44,100 @@ public class FunctionClassifier {
         return model.filterChildren((el) -> el instanceof CtClass<?>);
     }
 
-    public static void massClassifyFunctionOnFile(Path file, TestPhases classification, Result result){
-        SpoonAPI spoon = new Launcher();
-        // Makes sure we have a proper file
-        if(!Files.exists(file)){
-            throw new RuntimeException("File not found: " + file.toAbsolutePath());
+    public void massClassifyFunctionOnClassifiedFiles(HashMap<String, List<Path>> classifiedFiles){
+        for ( String phase : classifiedFiles.keySet()){
+            // We don't care about the unclassified files
+            if (phase.equals(this.undefinedKeyword)){
+                continue;
+            }
+
+            for( Path path : classifiedFiles.get(phase)){
+                massClassifyFunctionOnFile(path, phase);
+            }
         }
-        spoon.addInputResource(file.toString());
+    }
+
+    public void massClassifyFunctionOnFile(Path file, String phase){
+        SpoonAPI spoon = new Launcher();
+        spoon.addInputResource(file.toAbsolutePath().toString());
         CtModel model = spoon.buildModel();
-        model.filterChildren((el) -> el instanceof CtClass<?>)
-                .forEach((CtClass<?> ctClass) -> {
-                    ctClass.filterChildren((el) -> el instanceof CtMethod<?>)
-                            .forEach((CtMethod<?> method) -> {
-                                switch (classification){
-                                    case UNIT -> result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                                    case INTEGRATION -> result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                                    case SYSTEM -> result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                                    case UNDEFINED -> result.unclassifiedFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                                    case null, default -> {
-                                        return;
-                                    }
-                                }
-                    });
-                });
+
+        model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
+            ctClass.filterChildren((el) -> el instanceof CtMethod).forEach((CtMethod<?>  ctMethod) -> {
+                classifiedFunctions.get(phase).add( new FunctionInfo(ctMethod.getSimpleName(), file));
+            });
+        });
     }
 
-    public static void massClassifyFunctionOnDirectory(Path directory, TestPhases classification, Result result){
-        SpoonAPI spoon = new Launcher();
+    public void massClassifyFunctionOnClassifiedDirectories(HashMap<String, List<Path>> classifiedDirectories){
         String fileExtension = ".java";
-        if(!Files.exists(directory)){
-            throw new RuntimeException("Directory not found: " + directory.toAbsolutePath());
-        }
-
-        // Walk through every subtree and classify any files it finds
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
-                String name = directory.getFileName().toString();
-                if (name.endsWith(fileExtension)) {
-                    massClassifyFunctionOnFile(file, classification, result);
-                }
-
-                return  FileVisitResult.CONTINUE;
+        // Walk through every subtree and classify any files it finds to folder classification
+        for ( String phase : classifiedDirectories.keySet()){
+            if (phase.equals(this.undefinedKeyword)){
+                continue;
             }
-            // We don't want to walk down undefined folders
-            @Override
-            public  FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs){
-                if(classification == TestPhases.UNDEFINED && dir.getParent() == directory ){
-                    return FileVisitResult.SKIP_SUBTREE;
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        };
-        try{
-            Files.walkFileTree(directory, visitor);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
+            for (Path dir : classifiedDirectories.get(phase)){
+                SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+                    @Override
+                    public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
+                        String name = file.getFileName().toString();
+                        if (name.endsWith(fileExtension)) {
+                            massClassifyFunctionOnFile(file, phase);
+                        }
+                        return  FileVisitResult.CONTINUE;
+                    }
+                    // We don't want to walk down undefined folders
+                    @Override
+                    public  FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs){
+                        if( dir.getParent() == dir ){
+                            return FileVisitResult.SKIP_SUBTREE;
+                        }
+                        return FileVisitResult.CONTINUE;
+                    }
+                };
+                try{
+                    Files.walkFileTree(dir, visitor);
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
 
-    public static void classifyFunctionsInFile(Path file, Result result){
+    public void classifyFunctionsInFile(Path file){
         SpoonAPI spoon = new Launcher();
         spoon.addInputResource(file.toString());
         CtModel model = spoon.buildModel();
         // first we try to check them by name, if we can't, check by comments
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
             ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
-               if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.UNIT_KEYWORD)){
-                   result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-               }
-               else if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.INTEGRATION_KEYWORD)){
-                   result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-               } else if(Utils.containsCaseInsensitive(method.getSimpleName(), Keywords.SYSTEM_KEYWORDS)){
-                   result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-               } else{
-                   classifyFunctionByComment(method, file, result);
-               }
-            });
+                for ( KeywordsInfo i : this.keywords){
+                    if ( Utils.containsCaseInsensitive(method.getSimpleName(), i.keywords().toArray(new String[]{}))){
+                        classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file));
+                        return;
+                    }
+                }
+
+                classifyFunctionByComment(method, file);
+               });
         });
     }
-    public static void classifyFunctionByComment(CtMethod<?> method, Path file, Result result) {
+    public void classifyFunctionByComment(CtMethod<?> method, Path file) {
         List<CtComment> comments = method.getComments();
         for (CtComment comment : comments) {
-            if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.UNIT_KEYWORD)) {
-                result.unitFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                return;
-            } else if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.INTEGRATION_KEYWORD)) {
-                result.integrationFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                return;
-            } else if (Utils.containsCaseInsensitive(comment.getContent(), Keywords.SYSTEM_KEYWORDS)) {
-                result.systemFunctions.add(new FunctionInfo(method.getSimpleName(), file));
-                return;
+            for ( KeywordsInfo i : this.keywords){
+                if ( i.phase() == undefinedKeyword){
+                    continue;
+                }
+
+                if (Utils.containsCaseInsensitive(comment.getContent(), i.keywords().toArray(new String[]{}))){
+                    classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file));
+                }
             }
         }
 
-        result.unclassifiedFunctions.add(new FunctionInfo(method.getSimpleName(), file));
+        classifiedFunctions.get(undefinedKeyword).add(new FunctionInfo(method.getSimpleName(), file));
     }
 }

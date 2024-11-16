@@ -7,6 +7,7 @@ import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+// TODO: Redo tests
 class FunctionClassifierTest {
     @Test
     void massClassifyFunctionOnFile() {
