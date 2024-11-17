@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
-public class FilepathClassifier extends HeuristicsClassifier{
+public class FilepathClassifier extends Classifier {
     public HashMap<String, List<Path>> directories = new HashMap<>();
     public HashMap<String, List<Path>> files = new HashMap<>();
 
@@ -81,7 +81,7 @@ public class FilepathClassifier extends HeuristicsClassifier{
      * are stored in the appropriate property of the <c>Result</c> class.
      * @param root The path containing the subfolders to be classified. Is included in the checks.
      */
-    public void classifyFolders(Path root, Result res){
+    public void classifyFolders(Path root){
         SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
             @Override
             public FileVisitResult preVisitDirectory(Path directory, BasicFileAttributes attr){
@@ -110,17 +110,17 @@ public class FilepathClassifier extends HeuristicsClassifier{
      * are stored in the appropriate property of the <c>Result</c> class.
      * @param root The path containing the subfolders to be classified. Is included in the checks.
      */
-    public void classifyFiles(Path root, Result res){
+    public void classifyFiles(Path root){
         String fileExtension = ".java";
         try{
 
             for( KeywordsInfo info : keywords ){
-                for ( String kw : info.keywords() ){
-                    files.get(info.phase()).addAll(
-                            Finders.filesContainingSubstring(root, kw)
-                                    .stream().filter((Path path) -> path.getFileName().toString().endsWith(fileExtension)).toList()
-                    );
-                }
+                files.get(info.phase()).addAll(
+                        Finders.filesContainingSubstring(root, info.keywords().toArray(new String[]{}))
+                                .stream()
+                                .filter((Path path) -> path.getFileName().toString().endsWith(fileExtension))
+                                .toList()
+                );
             }
 
             files.get(undefinedKeyword).addAll(Files.find(root, 1, (path, basicFileAttributes) -> {
@@ -134,6 +134,16 @@ public class FilepathClassifier extends HeuristicsClassifier{
         } catch (IOException e) {
             System.err.println(e.getMessage());
         }
+    }
 
+    public void classify(Path root){
+        classifyFolders(root);
+        directories.get(undefinedKeyword).forEach(this::classifyFiles);
+    }
+    public void classify(Path[] dirs){
+        for (Path root : dirs){
+            classifyFolders(root);
+            directories.get(undefinedKeyword).forEach(this::classifyFiles);
+        }
     }
 }

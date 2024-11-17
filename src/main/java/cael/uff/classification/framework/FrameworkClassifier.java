@@ -11,8 +11,12 @@ import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
 import spoon.reflect.declaration.CtMethod;
 
+import java.io.IOException;
+import java.nio.file.FileVisitResult;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 /***
@@ -22,6 +26,8 @@ public class FrameworkClassifier {
     private ArrayList<PhaseInfo> phases;
     private Map<String, List<String>> results;
     private String undefinedPhase = "undefined";
+
+    private final String fileExtension = ".java";
     /***
      * Instantiates a <c>FrameworkClassifier</c> with a given libraries file. <c>libJson</c> must point to a JSON file
      * that containing a dictionary that has the classification type as a key and the value must be a list of libraries
@@ -48,6 +54,23 @@ public class FrameworkClassifier {
         this.results.put(undefinedPhase, new ArrayList<>());
     }
 
+    public void classify(Path root){
+        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
+            @Override
+            public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
+                if (file.toString().endsWith(fileExtension)){
+                    classifyFile(file);
+                }
+                return FileVisitResult.CONTINUE;
+            }
+        };
+        try{
+            Files.walkFileTree(root, visitor);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     public void classifyFile(Path file){
         SpoonAPI spoon = new Launcher();
         spoon.addInputResource(file.toString());
@@ -66,8 +89,6 @@ public class FrameworkClassifier {
                             }
                         }
                     }
-
-
                     results.get(phase).add(file.toString() + ":" + ctMethod.getSimpleName());
                 });
             });

@@ -2,9 +2,6 @@ package cael.uff.classification.heuristics;
 
 import cael.uff.Utils;
 import cael.uff.classification.FunctionInfo;
-import cael.uff.classification.Keywords;
-import cael.uff.classification.Result;
-import cael.uff.classification.TestPhases;
 import spoon.Launcher;
 import spoon.SpoonAPI;
 import spoon.reflect.CtModel;
@@ -24,7 +21,7 @@ import java.util.HashMap;
 import java.util.List;
 
 
-public class FunctionClassifier extends HeuristicsClassifier{
+public class FunctionClassifier extends Classifier {
 
     public HashMap<String, List<FunctionInfo>> classifiedFunctions = new HashMap<>();
 
