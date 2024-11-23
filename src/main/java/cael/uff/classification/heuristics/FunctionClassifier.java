@@ -125,7 +125,7 @@ public class FunctionClassifier extends Classifier {
         List<CtComment> comments = method.getComments();
         for (CtComment comment : comments) {
             for ( KeywordsInfo i : this.keywords){
-                if ( i.phase() == undefinedKeyword){
+                if ( i.phase().equals(undefinedKeyword) ){
                     continue;
                 }
 

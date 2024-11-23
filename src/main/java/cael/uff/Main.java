@@ -6,18 +6,22 @@ package cael.uff;
         - System Tests
 */
 
+import cael.uff.classification.FunctionInfo;
 import cael.uff.classification.framework.FrameworkClassifier;
 import cael.uff.classification.heuristics.FilepathClassifier;
 import cael.uff.classification.heuristics.FunctionClassifier;
 import cael.uff.classification.Result;
 import cael.uff.classification.TestPhases;
 import cael.uff.classification.heuristics.HeuristicsClassifier;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.awt.*;
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Map;
 
 public class Main {
     private final static String testFolderName = "test";
@@ -44,12 +48,22 @@ public class Main {
         }
 
         HeuristicsClassifier heuristicsClassifier = new HeuristicsClassifier(keywordPath);
-
         testFolders.forEach(heuristicsClassifier::classify);
 
         FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
         testFolders.forEach(frameworkClassifier::classify);
-    }
 
-    // TODO: Serialize result
+        Map<String, List<FunctionInfo>> results = heuristicsClassifier.getResults();
+        ObjectMapper mapper = new ObjectMapper();
+
+        try {
+            String resultFileName = repoPath.getFileName().toString() + "-results.json";
+            File resultFile = new File(resultFileName);
+            mapper.writeValue(resultFile, results);
+            System.out.println("Results written to " + resultFile.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }
+    }
 }
