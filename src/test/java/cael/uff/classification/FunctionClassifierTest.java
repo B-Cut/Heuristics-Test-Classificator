@@ -3,6 +3,7 @@ package cael.uff.classification;
 import cael.uff.classification.heuristics.FunctionClassifier;
 import org.junit.jupiter.api.Test;
 
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,12 +13,12 @@ class FunctionClassifierTest {
     @Test
     void massClassifyFunctionOnFile() {
         Result result = new Result();
-        FunctionClassifier.massClassifyFunctionOnFile(
+        FunctionClassifier functionClassifier = new FunctionClassifier(Path.of(""));
+        functionClassifier.massClassifyFunctionOnFile(
                 Paths.get( // Using full path temporally
                         "/home/nyx/Faculdade/ClassificadorJava/HeuristicsClassificator/src/test/resources/FunctionClassifierBase.java"
                 )
-                , TestPhases.UNDEFINED
-                , result
+                , "undefined"
         );
         int numberOfUnclassifiedFunctions = 2;
 

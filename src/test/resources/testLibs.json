@@ -1,0 +1,16 @@
+[
+  {
+    "priority": 1,
+    "phase": "one",
+    "libraries": [
+      "lang"
+    ]
+  },
+  {
+    "priority": 2,
+    "phase": "two",
+    "libraries": [
+      "Math"
+    ]
+  }
+]

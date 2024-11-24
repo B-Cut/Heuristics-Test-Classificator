@@ -25,7 +25,7 @@ public class FunctionClassifier extends Classifier {
 
     public HashMap<String, List<FunctionInfo>> classifiedFunctions = new HashMap<>();
 
-    FunctionClassifier(Path keywordFile) {
+    public FunctionClassifier(Path keywordFile) {
         super(keywordFile);
         for ( KeywordsInfo i : this.keywords) {
             classifiedFunctions.put(i.phase(), new ArrayList<FunctionInfo>());

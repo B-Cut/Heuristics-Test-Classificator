@@ -15,7 +15,7 @@ public class FilepathClassifier extends Classifier {
     public HashMap<String, List<Path>> directories = new HashMap<>();
     public HashMap<String, List<Path>> files = new HashMap<>();
 
-    FilepathClassifier(Path keywordFile) {
+    public FilepathClassifier(Path keywordFile) {
         super(keywordFile);
 
         for( KeywordsInfo info : keywords ){

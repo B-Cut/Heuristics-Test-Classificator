@@ -32,7 +32,7 @@ class FilepathClassifierTest {
 
         TestUtils.createFiles(tempDir, "test.txt");
 
-        FilepathClassifier filepathClassifier = new FilepathClassifier();
+        FilepathClassifier filepathClassifier = new FilepathClassifier(Path.of(""));
 
         List<Path> result = filepathClassifier.subdirectoriesWithKeyword(tempDir, "test");
 
@@ -53,7 +53,7 @@ class FilepathClassifierTest {
 
         TestUtils.createFiles(tempDir, "test.txt");
 
-        FilepathClassifier filepathClassifier = new FilepathClassifier();
+        FilepathClassifier filepathClassifier = new FilepathClassifier(Path.of(""));
 
         List<Path> result = filepathClassifier.subdirectoriesWithKeyword(tempDir, new String[]{
                 "integration",
@@ -84,8 +84,8 @@ class FilepathClassifierTest {
             TestUtils.createDirectories(root, testDir);
         }
 
-        FilepathClassifier filepathClassifier = new FilepathClassifier();
-        filepathClassifier.classifyFolders(root, result);
+        FilepathClassifier filepathClassifier = new FilepathClassifier(Path.of(""));
+        filepathClassifier.classifyFolders(root);
         // The E2E/unit folder should not be included as unit folder
         assertEquals(1, result.unitFolders.size());
         assertEquals(1, result.integrationFolders.size());
@@ -127,8 +127,8 @@ class FilepathClassifierTest {
         for (String testFile : testFiles){
             TestUtils.createFiles(root, testFile);
         }
-        FilepathClassifier filepathClassifier = new FilepathClassifier();
-        filepathClassifier.classifyFiles(root, result);
+        FilepathClassifier filepathClassifier = new FilepathClassifier(Path.of(""));
+        filepathClassifier.classifyFiles(root);
         assertEquals(numUnitClasses, result.unitFiles.size());
         assertEquals(numIntegrationClasses, result.integrationFiles.size());
         assertEquals(numSystemClasses, result.systemFiles.size());

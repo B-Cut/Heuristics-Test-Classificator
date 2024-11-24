@@ -1,5 +1,4 @@
-package com.example.test;
-
+package test.resources;
 import java.util.ArrayList;
 
 class FunctionClassifierBase {

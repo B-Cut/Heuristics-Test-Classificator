@@ -1,0 +1,24 @@
+[
+  {
+    "phase": "unit",
+    "keywords": [
+      "unit"
+    ]
+  },
+  {
+    "phase": "integration",
+    "keywords": [
+      "integration",
+      "integ"
+    ]
+  },
+  {
+    "phase": "system",
+    "keywords": [
+      "system",
+      "application",
+      "e2e",
+      "smoke"
+    ]
+  }
+]

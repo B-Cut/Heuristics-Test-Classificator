@@ -1,0 +1,30 @@
+[
+  {
+    "priority": 1,
+    "phase": "unit",
+    "libraries": [
+      "junit",
+      "testng"
+    ]
+  },
+  {
+    "priority": 2,
+    "phase": "integration",
+    "libraries": [
+      "arquillian",
+      "citrus",
+      "restassured",
+      "dbunit",
+      "springframework.test",
+      "testcontainers"
+    ]
+  },
+  {
+    "priority": 3,
+    "phase": "system",
+    "libraries": [
+      "selenium",
+      "serenity"
+    ]
+  }
+]
