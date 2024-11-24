@@ -29,6 +29,7 @@ public class HeuristicsClassifier {
     }
 
     public HashMap<String, List<FunctionInfo>> getResults(){
+        // The effectively classified functions are at the FunctionClassifier class
         return  functionClassifier.classifiedFunctions;
     }
 }

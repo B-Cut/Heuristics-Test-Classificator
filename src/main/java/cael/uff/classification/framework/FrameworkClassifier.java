@@ -1,9 +1,11 @@
 package cael.uff.classification.framework;
 
+import cael.uff.ProjectInfo;
 import cael.uff.classification.FunctionInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import spoon.Launcher;
+import spoon.MavenLauncher;
 import spoon.SpoonAPI;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
@@ -56,45 +58,56 @@ public class FrameworkClassifier {
         this.results.put(undefinedPhase, new ArrayList<>());
     }
 
-    public void classify(Path root){
-        SimpleFileVisitor<Path> visitor = new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attr){
-                if (file.toString().endsWith(fileExtension)){
-                    classifyFile(file);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        };
-        try{
-            Files.walkFileTree(root, visitor);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void classifyFile(Path file){
-        SpoonAPI spoon = new Launcher();
-        spoon.addInputResource(file.toString());
+    public void classify(){
+        // We know that we will only test Maven repos, so
+        String projectPath = ProjectInfo.INSTANCE.getProjectPath();
+        Launcher spoon = new MavenLauncher(projectPath, MavenLauncher.SOURCE_TYPE.ALL_SOURCE);
         CtModel model = spoon.buildModel();
 
-        model.filterChildren((el) -> el instanceof CtClass).forEach((CtClass<?> ctClass) -> {
+        model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
+
+            // If the class is not in one of the test directories, return from function
+            // Inneficient, but works
+            if (
+                    ProjectInfo.INSTANCE.getTestDirs().stream().noneMatch(
+                            (Path testDir) -> {
+                                Path classPath = ctClass.getPosition().getFile().toPath().toAbsolutePath().normalize();
+                                Path absoluteTestDir = testDir.toAbsolutePath().normalize();
+                                return classPath.startsWith(absoluteTestDir);
+                            }
+                    )
+            ){
+                return;
+            }
+
             ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> ctMethod) -> {
                 AtomicReference<String> phase = new AtomicReference<>(this.undefinedPhase);
                 AtomicInteger priority = new AtomicInteger();
                 ctMethod.filterChildren((el) -> el instanceof CtInvocation).forEach((CtInvocation<?> ctInvocation) -> {
                     for( PhaseInfo temp_phase : phases){
                         for ( String lib : temp_phase.libraries() ){
-                            if(ctInvocation.getExecutable().getDeclaringType().toString().contains(lib)){
-                                if ( temp_phase.priority() > priority.get()){
-                                    priority.set(temp_phase.priority());
-                                    phase.set(temp_phase.phase());
+                            try {
+                                if(ctInvocation.getExecutable().getDeclaringType().toString().contains(lib)){
+                                    if ( temp_phase.priority() > priority.get()){
+                                        priority.set(temp_phase.priority());
+                                        phase.set(temp_phase.phase());
+                                    }
                                 }
+                            } catch (NullPointerException e) {
+                                System.err.println(
+                                        String.format(
+                                                "Warning: No declaring type identified for %s:%s",
+                                                ctClass.getSimpleName(),
+                                                ctInvocation.toString()
+                                        )
+                                );
+                                return;
                             }
+
                         }
                     }
                 });
-                results.get(phase.get()).add(new FunctionInfo(ctMethod.getSimpleName(), file));
+                results.get(phase.get()).add(new FunctionInfo(ctMethod.getSimpleName(), ctClass.getPosition().getFile().toPath()));
             });
         });
     }

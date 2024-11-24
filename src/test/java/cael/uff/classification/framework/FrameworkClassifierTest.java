@@ -16,13 +16,14 @@ class FrameworkClassifierTest {
 
     }
 
+    // TODO: Update this test
     @Test
     void classify() {
         FrameworkClassifier classifier = new FrameworkClassifier(
                 Path.of("src/test/resources/testLibs.json")
         );
 
-        classifier.classify(Path.of("src/test/resources/"));
+        classifier.classify();
 
         int totalFunctionFound = 4;
         int oneFunctionFound = 1;

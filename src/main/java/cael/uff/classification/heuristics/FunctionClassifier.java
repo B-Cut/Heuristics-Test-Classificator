@@ -61,7 +61,7 @@ public class FunctionClassifier extends Classifier {
 
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
             ctClass.filterChildren((el) -> el instanceof CtMethod).forEach((CtMethod<?>  ctMethod) -> {
-                classifiedFunctions.get(phase).add( new FunctionInfo(ctMethod.getSimpleName(), file));
+                classifiedFunctions.get(phase).add( new FunctionInfo(ctMethod.getSimpleName(), file.normalize()));
             });
         });
     }
@@ -112,7 +112,7 @@ public class FunctionClassifier extends Classifier {
             ctClass.filterChildren((el) -> el instanceof CtMethod<?>).forEach((CtMethod<?> method) -> {
                 for ( KeywordsInfo i : this.keywords){
                     if ( Utils.containsCaseInsensitive(method.getSimpleName(), i.keywords().toArray(new String[]{}))){
-                        classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file));
+                        classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file.normalize()));
                         return;
                     }
                 }
@@ -130,11 +130,11 @@ public class FunctionClassifier extends Classifier {
                 }
 
                 if (Utils.containsCaseInsensitive(comment.getContent(), i.keywords().toArray(new String[]{}))){
-                    classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file));
+                    classifiedFunctions.get(i.phase()).add( new FunctionInfo(method.getSimpleName(), file.normalize()));
                 }
             }
         }
 
-        classifiedFunctions.get(undefinedKeyword).add(new FunctionInfo(method.getSimpleName(), file));
+        classifiedFunctions.get(undefinedKeyword).add(new FunctionInfo(method.getSimpleName(), file.normalize()));
     }
 }

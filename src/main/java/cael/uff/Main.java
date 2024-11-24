@@ -28,10 +28,11 @@ public class Main {
 
     // TODO: Proper argument parsing
     public static void main(String[] args) {
-        if (args.length != 1) {
+        if (args.length == 0) {
             System.out.println(
-                    "Usage: java -jar tests-classificator.jar <path-to-repository> <keyword-json> <libraries-json>"
+                    "Usage: java -jar HeuristicsClassificator.jar <path-to-repository> <keyword-json> <libraries-json>"
             );
+            System.exit(1);
         }
 
         Path repoPath = Paths.get(args[0]);
@@ -40,8 +41,12 @@ public class Main {
 
         List<Path> testFolders;
 
+
+        ProjectInfo.INSTANCE.setProjectPath(repoPath.toString());
+
         try{
             testFolders = Finders.testFoldersInRepo(repoPath, testFolderName);
+            ProjectInfo.INSTANCE.setTestDirs(testFolders);
         } catch (IOException e) {
             e.printStackTrace();
             return;
@@ -51,16 +56,20 @@ public class Main {
         testFolders.forEach(heuristicsClassifier::classify);
 
         FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
-        testFolders.forEach(frameworkClassifier::classify);
+        frameworkClassifier.classify();
 
-        Map<String, List<FunctionInfo>> results = heuristicsClassifier.getResults();
         ObjectMapper mapper = new ObjectMapper();
 
         try {
-            String resultFileName = repoPath.getFileName().toString() + "-results.json";
+            String resultFileName = repoPath.getFileName().toString() + "-heuristics-results.json";
             File resultFile = new File(resultFileName);
-            mapper.writeValue(resultFile, results);
-            System.out.println("Results written to " + resultFile.getAbsolutePath());
+            mapper.writeValue(resultFile, heuristicsClassifier.getResults());
+            System.out.println("Heuristics results written to " + resultFile.getAbsolutePath());
+
+            resultFileName = repoPath.getFileName().toString() + "-framework-results.json";
+            resultFile = new File(resultFileName);
+            mapper.writeValue(resultFile, frameworkClassifier.getResults());
+            System.out.println("Framework results written to " + resultFile.getAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
             return;

@@ -3,6 +3,7 @@ package cael.uff.classification.heuristics;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -21,7 +22,7 @@ public class Classifier {
 
         ObjectMapper mapper = new ObjectMapper();
         try{
-            this.keywords = mapper.readValue(keywordFile.toAbsolutePath().toString(), new TypeReference<ArrayList<KeywordsInfo>>(){});
+            this.keywords = mapper.readValue(new File(keywordFile.toAbsolutePath().toString()), new TypeReference<ArrayList<KeywordsInfo>>(){});
         } catch (Exception e){
             e.printStackTrace();
             System.exit(1);
