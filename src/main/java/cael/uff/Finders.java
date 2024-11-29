@@ -7,6 +7,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
+import static java.lang.System.exit;
+
 public abstract class Finders {
     // Assumes test folder name is in the singular.
     public static List<Path> testFoldersInRepo(Path repo, String testFolderName) throws IOException {
@@ -33,6 +35,22 @@ public abstract class Finders {
                                 Utils.containsCaseInsensitive(path.getFileName().toString(), substring))
         ){
             paths = pathStream.toList();
+        }
+
+        return paths;
+    }
+
+    public static ArrayList<Path> foldersContainingFile(Path root, String filename){
+        ArrayList<Path> paths = new ArrayList<>();
+        try(
+                Stream<Path> pathStream = Files.find(root, Integer.MAX_VALUE, (path, basicFileAttributes) ->
+                        path.getFileName().equals(filename) && basicFileAttributes.isRegularFile())
+        ){
+            paths.addAll(pathStream.map((path -> path = path.toAbsolutePath().normalize().getParent())).toList());
+        } catch (Exception e) {
+            System.err.println("Failed to get files from " + root);
+            e.getMessage();
+            exit(1);
         }
 
         return paths;

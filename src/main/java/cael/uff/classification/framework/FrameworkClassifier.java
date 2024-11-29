@@ -1,6 +1,8 @@
 package cael.uff.classification.framework;
 
+import cael.uff.Finders;
 import cael.uff.ProjectInfo;
+import cael.uff.Utils;
 import cael.uff.classification.FunctionInfo;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,6 +13,7 @@ import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtMethod;
+import spoon.support.compiler.SpoonPom;
 
 import java.io.File;
 import java.io.IOException;
@@ -59,10 +62,35 @@ public class FrameworkClassifier {
     }
 
     public void classify(){
-        // We know that we will only test Maven repos, so
+        // We will only test maven repos.
+        // Since we can have multiple pom.xml files, we need to find them all before classifying
         String projectPath = ProjectInfo.INSTANCE.getProjectPath();
-        Launcher spoon = new MavenLauncher(projectPath, MavenLauncher.SOURCE_TYPE.ALL_SOURCE);
-        CtModel model = spoon.buildModel();
+        //ArrayList<Path> modules = Finders.foldersContainingFile(projectPath, "pom.xml");
+
+        MavenLauncher spoon;
+        try{
+            spoon = new MavenLauncher(projectPath, MavenLauncher.SOURCE_TYPE.ALL_SOURCE, true   );
+        } catch (Exception e){
+            System.err.println("Failed to launch Maven project. Skipping framework analysis");
+            System.err.println(e.getMessage());
+            return;
+        }
+
+
+        spoon.getEnvironment().setAutoImports(true);
+        spoon.getEnvironment().setIgnoreDuplicateDeclarations(true);
+        spoon.getEnvironment().setIgnoreSyntaxErrors(true);
+        spoon.getEnvironment().setShouldCompile(true);
+
+        CtModel model;
+        try{
+            model = spoon.buildModel();
+        } catch (Exception e){
+            System.err.println("Failed to build model. Skipping framework analysis");
+            System.err.println(e.getMessage());
+            return;
+        }
+
 
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach((CtClass<?> ctClass) -> {
 
