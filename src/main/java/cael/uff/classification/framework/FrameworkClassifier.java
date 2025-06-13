@@ -177,6 +177,7 @@ public class FrameworkClassifier {
                     ProjectInfo.INSTANCE.getTestDirs().forEach(path -> {
                         if (path.normalize().toAbsolutePath().endsWith(Path.of(ctClass.getPosition().toString()))){
                             isInTestRepo.set(Boolean.valueOf(true));
+
                         }
                     });
 

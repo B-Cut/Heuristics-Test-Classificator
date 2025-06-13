@@ -49,5 +49,6 @@ public class Main {
         classifier.startClassification();
 
         classifier.dumpResults(Path.of("./results_dump.txt"));
+
     }
 }

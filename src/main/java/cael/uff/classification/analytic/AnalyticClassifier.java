@@ -12,6 +12,7 @@ import spoon.reflect.visitor.CtScanner;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+
 import java.lang.annotation.Annotation;
 import java.nio.file.Path;
 import java.util.*;
@@ -46,8 +47,6 @@ public class AnalyticClassifier {
 
     public void startClassification(){
         CtModel model = ProjectInfo.INSTANCE.getModel();
-
-
 
         CtScanner scanner = new CtScanner(){
             @Override
@@ -218,4 +217,59 @@ public class AnalyticClassifier {
         }
 
     }
+    private void classify(CtMethod<?> method){
+
+
+        CtScanner scanner = new CtScanner(){
+            String lastMethodCalled = "";
+            String lastClassCalled = "";
+            String highestOrderPackage = "";
+
+            private enum Type{METHOD, CLASS, PACKAGE, NOT_UNIT}
+            private Type currentType = Type.METHOD;
+
+            private String[] packageIgnoreList = {
+                    "java.",
+                    "org.junit"
+            };
+
+            @Override
+            public <T> void visitCtInvocation(CtInvocation<T> invocation) {
+                if(currentType == Type.NOT_UNIT) return;
+
+                if(Arrays.stream(packageIgnoreList)
+                        .anyMatch(p -> extractMethodName(invocation).startsWith(p))
+                ){
+                    return;
+                }
+
+
+                if(lastMethodCalled.isEmpty()) lastMethodCalled = extractMethodName(invocation);
+                if(lastClassCalled.isEmpty()) lastClassCalled = extractDeclaringClass(invocation);
+                if(highestOrderPackage == null) highestOrderPackage = extractPackage(invocation);
+
+                if(!lastMethodCalled.equals(extractMethodName(invocation)) && currentType == Type.METHOD)
+                    currentType = Type.CLASS;
+                if(!lastClassCalled.equals(extractDeclaringClass(invocation)) && currentType == Type.CLASS)
+                    currentType = Type.PACKAGE;
+
+                if(!extractPackage(invocation).equals(highestOrderPackage)){
+                    String newPath = commonPackagePath(extractPackage(invocation), highestOrderPackage);
+                    if (newPath.isEmpty() || newPath.equals(rootPackage)) currentType = Type.NOT_UNIT;
+                    else highestOrderPackage = newPath;
+                }
+
+            }
+
+            public String getCurrentType() {
+                return currentType.toString();
+            }
+        };
+
+        scanner.scan(method);
+
+
+
+    }
+
 }
