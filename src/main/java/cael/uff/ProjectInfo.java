@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import java.util.stream.Collectors;
+
 public enum ProjectInfo{
     INSTANCE;
     private String projectPath;
@@ -29,11 +31,21 @@ public enum ProjectInfo{
         return model;
     }
 
+    private List<Path> getTestFolders(){
+        return testDirs;
+    }
+    public Collection<?> packages;
+    public CtModel getModel(){
+        if(model == null){ createModel(); }
+
+        return model;
+    }
+
     public List<Path> getTestDirs(){
         return testDirs;
     }
 
-    public void setTestDirs(List<Path> testDirs){
+    public void setTestDirs(ArrayList<Path> testDirs){
         this.testDirs = testDirs;
     }
 
@@ -49,19 +61,15 @@ public enum ProjectInfo{
             }
         };
         launcher.getFactory().getEnvironment().setNoClasspath(true);
-
+        launcher.getEnvironment().setComplianceLevel(21);
         launcher.getModelBuilder().addCompilationUnitFilter( filter );
 
-        /*List<Path> testFolders = new ArrayList<Path>();
+
         try {
-            testFolders = Finders.testFoldersInRepo(Path.of(projectPath), "test");
+            testDirs = Finders.testFoldersInRepo(Path.of(projectPath), "test");
         } catch (Exception e){
             e.printStackTrace();
         }
-
-        for (Path path : testFolders){
-            launcher.addInputResource(path.toString());
-        }*/
 
         model = launcher.buildModel();
         packages = model.getAllPackages();

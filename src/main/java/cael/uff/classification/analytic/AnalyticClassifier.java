@@ -9,6 +9,10 @@ import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.*;
 import spoon.reflect.visitor.CtScanner;
 
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+
 import java.lang.annotation.Annotation;
 import java.nio.file.Path;
 import java.util.*;
@@ -32,6 +36,8 @@ public class AnalyticClassifier {
     private final String undefinedPhase = "undefined";
     private final String rootPackage = ProjectInfo.INSTANCE.getModel().getRootPackage().getQualifiedName();
 
+    private ArrayList<AnalyticResult> analyticResults = new ArrayList<>();
+
     public AnalyticClassifier(){
         results.put("unit", new ArrayList<>());
         results.put("integration", new ArrayList<>());
@@ -48,7 +54,7 @@ public class AnalyticClassifier {
                 super.visitCtAnnotation(annotation);
                 // We found a test
                 if(annotation.toString().endsWith("Test")){
-                    classifyClassIsUnit(annotation.getParent(CtMethod.class));
+                    classify(annotation.getParent(CtMethod.class));
                 }
             }
         };
@@ -56,19 +62,32 @@ public class AnalyticClassifier {
 
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach(scanner::scan);
 
-        System.out.println(results.get("unit").size());
+        System.out.println(analyticResults);
     }
 
     private String extractMethodName(CtInvocation<?> invocation){
-        return invocation.getExecutable().getActualMethod().toString();
+        try{
+            return invocation.getExecutable().getActualMethod().getName();
+        } catch (NullPointerException e){
+            throw new RuntimeException("Could not extract method name from CtInvocation: " + invocation.toStringDebug(), e);
+        }
+
     }
 
     private String extractDeclaringClass(CtInvocation<?> invocation){
-        return invocation.getExecutable().getDeclaringType().toString();
+        try{
+            return invocation.getExecutable().getClass().getName();
+        } catch (NullPointerException e){
+            throw new RuntimeException("Could not extract class name from CtInvocation: " + invocation.toStringDebug(), e);
+        }
     }
 
     private String extractPackage(CtInvocation<?> invocation){
-        return invocation.getExecutable().getDeclaringType().getPackage().toString();
+        try{
+            return invocation.getExecutable().getClass().getPackage().getName();
+        } catch (NullPointerException e){
+            throw new RuntimeException("Could not extract package name from CtInvocation: " + invocation.toString(), e);
+        }
     }
 
     private String commonPackagePath(String package1, String package2){
@@ -96,6 +115,107 @@ public class AnalyticClassifier {
         }
 
         return String.join(".", commonPath);
+    }
+
+    private class UnitScanner extends CtScanner {
+        String lastMethodCalled = "";
+        String lastClassCalled = "";
+        String highestOrderPackage = "";
+
+        public boolean hadError = false;
+
+        private UnitTypes currentType = UnitTypes.METHOD;
+
+        private final String[] packageIgnoreList = {
+                "java.",
+                "org.junit"
+        };
+
+        @Override
+        public <T> void visitCtInvocation(CtInvocation<T> invocation) {
+            if(currentType == UnitTypes.NOT_UNIT) return;
+
+            String methodName = "";
+
+            try {
+                methodName = extractMethodName(invocation);
+            } catch (RuntimeException ex){
+                System.err.println("Failed to get executable for " + invocation);
+                System.err.println(ex.getMessage() + "\n");
+                hadError = true;
+                return;
+            }
+
+            if(Arrays.stream(packageIgnoreList)
+                    .anyMatch(p -> extractMethodName(invocation).startsWith(p))
+            ){
+                return;
+            }
+
+            try{
+                if(lastMethodCalled.isEmpty()) lastMethodCalled = extractMethodName(invocation);
+                if(lastClassCalled.isEmpty()) lastClassCalled = extractDeclaringClass(invocation);
+                if(highestOrderPackage == null) highestOrderPackage = extractPackage(invocation);
+            } catch (RuntimeException ex){
+                System.err.println("Failed to get executable for " + invocation.toString());
+                System.err.println(ex.getMessage() + "\n");
+                hadError = true;
+                return;
+            }
+
+
+            if(!lastMethodCalled.equals(extractMethodName(invocation)) && currentType == UnitTypes.METHOD)
+                currentType = UnitTypes.CLASS;
+
+            if(!lastClassCalled.equals(extractDeclaringClass(invocation)) && currentType == UnitTypes.CLASS)
+                currentType = UnitTypes.PACKAGE;
+
+            String commonPath = commonPackagePath(extractPackage(invocation), highestOrderPackage);
+
+            if(!commonPath.equals(highestOrderPackage)){
+                if (commonPath.isEmpty() || commonPath.equals(rootPackage)) currentType = UnitTypes.NOT_UNIT;
+                else if(commonPath.length() < highestOrderPackage.length()) highestOrderPackage = commonPath;
+            }
+        }
+
+        public UnitTypes getCurrentType() {
+            return currentType;
+        }
+    }
+
+    private void classify(CtMethod<?> method){
+        if (method == null) return;
+        UnitScanner scanner = new UnitScanner();
+
+        scanner.scan(method);
+
+        if(scanner.hadError && scanner.getCurrentType() == UnitTypes.METHOD){
+            scanner.currentType = UnitTypes.ERROR;
+        }
+
+        analyticResults.add(
+                new AnalyticResult(method.getSimpleName(),
+                        method.getDeclaringType().getQualifiedName(),
+                        scanner.getCurrentType(),
+                        method.prettyprint()));
+    }
+
+    public void dumpResults(Path path){
+        try{
+            FileWriter result = new FileWriter(path.toFile());
+
+            for (AnalyticResult analyticResult : analyticResults) {
+                result.append("Function Name: ").append(analyticResult.Name()).append("\n");
+                result.append("Origin Class: ").append(analyticResult.Origin()).append("\n");
+                result.append("Type: ").append(analyticResult.Type().toString()).append("\n");
+                result.append("Body:\n").append(analyticResult.body()).append("\n");
+                result.append("\n====================================================================================================\n");
+            }
+        } catch (IOException e){
+            System.err.println(e.getMessage());
+            e.printStackTrace();
+        }
+
     }
     private void classify(CtMethod<?> method){
 
@@ -152,83 +272,4 @@ public class AnalyticClassifier {
 
     }
 
-    private void classifyMethodIsUnit(CtMethod<?> method){
-        final String[] lastMethodCalled = {""};
-        AtomicBoolean isUnit = new AtomicBoolean(true);
-
-        method.filterChildren(((el) -> el instanceof CtInvocation<?>)).forEach((CtInvocation<?> invocation) -> {
-            // This method won't stop until all invocations are evaluated.
-            // So we set this variable to skip all subsequent function calls
-            if(!isUnit.get()) return;
-
-            String methodName = invocation.getExecutable().getActualMethod().toString();
-
-            // Ignore default java libraries
-            if(methodName.startsWith("java.")){
-                return;
-            }
-
-            // Ignore JUnit methods
-            if(Utils.containsCaseInsensitive(methodName, "junit")) return;
-
-
-            if(lastMethodCalled[0].isEmpty()){
-                // If there isn't a class defined, define one
-                lastMethodCalled[0] = methodName;
-            }
-            // if the current invocations belongs to a class different from the one being tested, the class is not the unit
-            else if(!methodName.equals(lastMethodCalled[0])){
-                isUnit.set(false);
-            }
-        });
-
-        if(isUnit.get()){
-            results.get("unit")
-                    .add(new FunctionInfo(method.getSimpleName(), Path.of(method.getPath().toString()), method.prettyprint()));
-        } else {
-            classifyClassIsUnit(method);
-        }
-    }
-
-    private void classifyClassIsUnit(CtMethod<?> method){
-
-        final String[] lastInvocationClass = {""};
-        AtomicBoolean isUnit = new AtomicBoolean(true);
-
-
-        method.filterChildren(((el) -> el instanceof CtInvocation<?>)).forEach((CtInvocation<?> invocation) -> {
-            // This method won't stop until all invocations are evaluated.
-            // So we set this variable to skip all subsequent function calls
-            if(!isUnit.get()) return;
-
-            String className = extractDeclaringClass(invocation);
-
-            // Ignore default java libraries
-            if(className.startsWith("java.")){
-                return;
-            }
-
-            // Ignore JUnit methods
-            if(Utils.containsCaseInsensitive(className, "junit")) return;
-
-
-            if(lastInvocationClass[0].isEmpty()){
-                // If there isn't a class defined, define one
-                lastInvocationClass[0] = className;
-            }
-            // if the current invocations belongs to a class different from the one being tested, the class is not the unit
-            else if(!className.equals(lastInvocationClass[0])){
-                isUnit.set(false);
-            }
-        });
-
-        if(isUnit.get()){
-            results.get("unit")
-                    .add(new FunctionInfo(method.getSimpleName(), Path.of(method.getPath().toString()), method.prettyprint()));
-        } else {
-            classifyPackageIsUnit(method);
-        }
-    }
-
-    private void classifyPackageIsUnit(CtMethod<?> method){}
 }

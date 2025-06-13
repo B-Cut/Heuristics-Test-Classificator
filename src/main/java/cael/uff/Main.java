@@ -45,51 +45,10 @@ public class Main {
 
         ProjectInfo.INSTANCE.setProjectPath(repoPath.toString());
 
-        try{
-            testFolders = Finders.testFoldersInRepo(repoPath, testFolderName);
-            ProjectInfo.INSTANCE.setTestDirs(testFolders);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
         AnalyticClassifier classifier = new AnalyticClassifier();
         classifier.startClassification();
-        /*
-        Path resultPath = Path.of(System.getProperty("user.dir")).resolve("results");
-        new File(resultPath.toString()).mkdirs();
 
+        classifier.dumpResults(Path.of("./results_dump.txt"));
 
-        System.out.println("Started heuristics classsifier for: " + repoPath.getFileName());
-        HeuristicsClassifier heuristicsClassifier = new HeuristicsClassifier(keywordPath);
-        testFolders.forEach(heuristicsClassifier::classify);
-
-
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Path resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-heuristics-results.json");
-            mapper.writeValue(new File(resultFilePath.toString()), heuristicsClassifier.getResults());
-            System.out.println("Heuristics results written to " + resultFilePath.toAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-
-
-        System.out.println("Started framework classsifier for: " + repoPath.getFileName());
-        FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
-        frameworkClassifier.classify();
-
-
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            Path resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-framework-results.json");
-            mapper.writeValue(new File(resultFilePath.toString()), frameworkClassifier.getResults());
-            System.out.println("Framework results written to " + resultFilePath.toAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }*/
     }
 }
