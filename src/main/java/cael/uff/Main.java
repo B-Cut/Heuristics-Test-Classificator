@@ -7,6 +7,7 @@ package cael.uff;
 */
 
 import cael.uff.classification.FunctionInfo;
+import cael.uff.classification.analytic.AnalyticClassifier;
 import cael.uff.classification.framework.FrameworkClassifier;
 import cael.uff.classification.heuristics.FilepathClassifier;
 import cael.uff.classification.heuristics.FunctionClassifier;
@@ -51,30 +52,44 @@ public class Main {
             e.printStackTrace();
             return;
         }
-        System.out.println("Started heuristics classsifier for : " + repoPath.getFileName());
+
+        AnalyticClassifier classifier = new AnalyticClassifier();
+        classifier.startClassification();
+        /*
+        Path resultPath = Path.of(System.getProperty("user.dir")).resolve("results");
+        new File(resultPath.toString()).mkdirs();
+
+
+        System.out.println("Started heuristics classsifier for: " + repoPath.getFileName());
         HeuristicsClassifier heuristicsClassifier = new HeuristicsClassifier(keywordPath);
         testFolders.forEach(heuristicsClassifier::classify);
 
-        System.out.println("Started framework classsifier for : " + repoPath.getFileName());
-        FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
-        frameworkClassifier.classify();
 
-        ObjectMapper mapper = new ObjectMapper();
 
         try {
-            Path resultPath = Path.of(System.getProperty("user.dir")).resolve("results");
+            ObjectMapper mapper = new ObjectMapper();
             Path resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-heuristics-results.json");
-            File resultFile = new File(resultFilePath.toString());
-            mapper.writeValue(resultFile, heuristicsClassifier.getResults());
-            System.out.println("Heuristics results written to " + resultFile.getAbsolutePath());
-
-            resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-framework-results.json");
-            resultFile = new File(resultFilePath.toString());
-            mapper.writeValue(resultFile, frameworkClassifier.getResults());
-            System.out.println("Framework results written to " + resultFile.getAbsolutePath());
+            mapper.writeValue(new File(resultFilePath.toString()), heuristicsClassifier.getResults());
+            System.out.println("Heuristics results written to " + resultFilePath.toAbsolutePath());
         } catch (IOException e) {
             e.printStackTrace();
             return;
         }
+
+
+        System.out.println("Started framework classsifier for: " + repoPath.getFileName());
+        FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
+        frameworkClassifier.classify();
+
+
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            Path resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-framework-results.json");
+            mapper.writeValue(new File(resultFilePath.toString()), frameworkClassifier.getResults());
+            System.out.println("Framework results written to " + resultFilePath.toAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+            return;
+        }*/
     }
 }

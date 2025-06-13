@@ -40,6 +40,20 @@ public abstract class Finders {
         return paths;
     }
 
+    public static ArrayList<Path> filesThatEqual(Path folder, String substring) throws IOException {
+        ArrayList<Path> paths = new ArrayList<>();
+
+        try(
+                Stream<Path> pathStream = Files
+                        .find(folder, 1, (path, basicFileAttributes) ->
+                                basicFileAttributes.isRegularFile() && path.getFileName().toString().equalsIgnoreCase(substring))
+        ){
+            paths = (ArrayList<Path> ) pathStream.toList();
+        }
+
+        return paths;
+    }
+
     public static ArrayList<Path> foldersContainingFile(Path root, String filename){
         ArrayList<Path> paths = new ArrayList<>();
         try(

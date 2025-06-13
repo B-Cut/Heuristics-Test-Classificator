@@ -3,28 +3,105 @@
     "priority": 1,
     "phase": "unit",
     "libraries": [
-      "junit",
-      "testng"
+      {
+        "keywords": ["junit"],
+        "groupIds": ["org.junit.jupiter"]
+      },
+      {
+        "keywords": ["testng"],
+        "groupIds": ["org.testng"]
+      }
     ]
   },
   {
     "priority": 2,
     "phase": "integration",
     "libraries": [
-      "arquillian",
-      "citrus",
-      "restassured",
-      "dbunit",
-      "springframework.test",
-      "testcontainers"
+      {
+        "keywords": ["arquillian"],
+        "groupId": [
+          "org.jboss.arquillian.ajocado",
+          "org.jboss.arquillian.arquillian-api",
+          "org.jboss.arquillian.arquillian-bom",
+          "org.jboss.arquillian.arquillian-build",
+          "org.jboss.arquillian.arquillian-impl-base",
+          "org.jboss.arquillian.arquillian-junit",
+          "org.jboss.arquillian.arquillian-parent",
+          "org.jboss.arquillian.arquillian-reference-guide",
+          "org.jboss.arquillian.arquillian-spi",
+          "org.jboss.arquillian.testcontainers",
+          "org.jboss.arquillian.testng",
+          "org.jboss.arquillian.config",
+          "org.jboss.arquillian.container",
+          "org.jboss.arquillian.core",
+          "org.jboss.arquillian.daemon",
+          "org.jboss.arquillian.example",
+          "org.jboss.arquillian.extension",
+          "org.jboss.arquillian.framework",
+          "org.jboss.arquillian.graphene",
+          "org.jboss.arquillian.jakarta",
+          "org.jboss.arquillian.junit",
+          "org.jboss.arquillian.junit5",
+          "org.jboss.arquillian.maven",
+          "org.jboss.arquillian.osgi",
+          "org.jboss.arquillian.packager",
+          "org.jboss.arquillian.protocol",
+          "org.jboss.arquillian.selenium",
+          "org.jboss.arquillian.spock",
+          "org.jboss.arquillian.test",
+          "org.jboss.arquillian.testenricher",
+          "org.jboss.arquillian.testng"
+        ]
+      },
+      {
+        "keywords": ["citrus"],
+        "groupIds": [
+          "org.citrus"
+        ]
+      },
+      {
+        "keywords": ["restassured"],
+        "groupIds": [
+          "io.rest-assured"
+        ]
+      },
+      {
+        "keywords": ["dbunit"],
+        "groupIds": [
+          "org.dbunit"
+        ]
+      },
+      {
+        "keywords": ["springframework.test"],
+        "groupIds": [
+          "org.springframework"
+        ]
+      },
+      {
+        "keywords": ["testcontainers"],
+        "groupIds": [
+          "org.testcontainers"
+        ]
+      }
+
     ]
   },
   {
     "priority": 3,
     "phase": "system",
     "libraries": [
-      "selenium",
-      "serenity"
+      {
+        "keywords": ["selenium"],
+        "libraryUrl": [
+          "org.seleniumhq.selenium"
+        ]
+      },
+      {
+        "keywords": ["serenity"],
+        "libraryUrl": [
+          "net.serenity-bdd"
+        ]
+      }
     ]
   }
 ]
