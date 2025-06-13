@@ -5,6 +5,6 @@ import java.util.List;
 public record PhaseInfo(
         int priority,
         String phase,
-        List<String> libraries
+        List<FrameworkInfo> libraries
 ) {
 }

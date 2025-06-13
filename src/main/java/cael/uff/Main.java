@@ -7,6 +7,7 @@ package cael.uff;
 */
 
 import cael.uff.classification.FunctionInfo;
+import cael.uff.classification.analytic.AnalyticClassifier;
 import cael.uff.classification.framework.FrameworkClassifier;
 import cael.uff.classification.heuristics.FilepathClassifier;
 import cael.uff.classification.heuristics.FunctionClassifier;
@@ -44,37 +45,9 @@ public class Main {
 
         ProjectInfo.INSTANCE.setProjectPath(repoPath.toString());
 
-        try{
-            testFolders = Finders.testFoldersInRepo(repoPath, testFolderName);
-            ProjectInfo.INSTANCE.setTestDirs(testFolders);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
-        System.out.println("Started heuristics classsifier for : " + repoPath.getFileName());
-        HeuristicsClassifier heuristicsClassifier = new HeuristicsClassifier(keywordPath);
-        testFolders.forEach(heuristicsClassifier::classify);
+        AnalyticClassifier classifier = new AnalyticClassifier();
+        classifier.startClassification();
 
-        System.out.println("Started framework classsifier for : " + repoPath.getFileName());
-        FrameworkClassifier frameworkClassifier = new FrameworkClassifier(librariesPath);
-        frameworkClassifier.classify();
-
-        ObjectMapper mapper = new ObjectMapper();
-
-        try {
-            Path resultPath = Path.of(System.getProperty("user.dir")).resolve("results");
-            Path resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-heuristics-results.json");
-            File resultFile = new File(resultFilePath.toString());
-            mapper.writeValue(resultFile, heuristicsClassifier.getResults());
-            System.out.println("Heuristics results written to " + resultFile.getAbsolutePath());
-
-            resultFilePath = resultPath.resolve(repoPath.getFileName().toString() + "-framework-results.json");
-            resultFile = new File(resultFilePath.toString());
-            mapper.writeValue(resultFile, frameworkClassifier.getResults());
-            System.out.println("Framework results written to " + resultFile.getAbsolutePath());
-        } catch (IOException e) {
-            e.printStackTrace();
-            return;
-        }
+        classifier.dumpResults(Path.of("./results_dump.txt"));
     }
 }
