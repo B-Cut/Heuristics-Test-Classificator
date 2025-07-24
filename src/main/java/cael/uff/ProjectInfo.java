@@ -25,16 +25,10 @@ public enum ProjectInfo{
         return projectPath;
     }
     public Collection<?> packages;
-    public CtModel getModel(){
-        if(model == null){ createModel(); }
-
-        return model;
-    }
 
     private List<Path> getTestFolders(){
         return testDirs;
     }
-    public Collection<?> packages;
     public CtModel getModel(){
         if(model == null){ createModel(); }
 

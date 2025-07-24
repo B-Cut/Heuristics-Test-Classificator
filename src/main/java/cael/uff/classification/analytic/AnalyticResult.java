@@ -4,6 +4,7 @@ public record AnalyticResult(
         String Name,
         String Origin,
         UnitTypes Type,
-        String body
+        String body,
+        Boolean hadError
 ) {
 }

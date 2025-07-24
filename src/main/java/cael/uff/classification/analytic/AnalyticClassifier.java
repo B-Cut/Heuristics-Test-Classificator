@@ -3,20 +3,19 @@ package cael.uff.classification.analytic;
 import cael.uff.ProjectInfo;
 import cael.uff.Utils;
 import cael.uff.classification.FunctionInfo;
-import org.apache.commons.lang3.StringUtils;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.*;
 import spoon.reflect.visitor.CtScanner;
 
-import java.io.File;
+
 import java.io.FileWriter;
 import java.io.IOException;
 
 import java.lang.annotation.Annotation;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 
 /**
  * This class uses the information contained in a given test to determine in which phase it belong
@@ -62,12 +61,12 @@ public class AnalyticClassifier {
 
         model.filterChildren((el) -> el instanceof CtClass<?>).forEach(scanner::scan);
 
-        System.out.println(analyticResults);
+        System.out.println(analyticResults.size());
     }
 
     private String extractMethodName(CtInvocation<?> invocation){
         try{
-            return invocation.getExecutable().getActualMethod().getName();
+            return extractDeclaringClass(invocation) + '.' + invocation.getExecutable().getSimpleName();
         } catch (NullPointerException e){
             throw new RuntimeException("Could not extract method name from CtInvocation: " + invocation.toStringDebug(), e);
         }
@@ -76,7 +75,7 @@ public class AnalyticClassifier {
 
     private String extractDeclaringClass(CtInvocation<?> invocation){
         try{
-            return invocation.getExecutable().getClass().getName();
+            return invocation.getExecutable().getDeclaringType().getQualifiedName();
         } catch (NullPointerException e){
             throw new RuntimeException("Could not extract class name from CtInvocation: " + invocation.toStringDebug(), e);
         }
@@ -84,13 +83,13 @@ public class AnalyticClassifier {
 
     private String extractPackage(CtInvocation<?> invocation){
         try{
-            return invocation.getExecutable().getClass().getPackage().getName();
+            return invocation.getExecutable().getDeclaringType().getPackage().getQualifiedName();
         } catch (NullPointerException e){
             throw new RuntimeException("Could not extract package name from CtInvocation: " + invocation.toString(), e);
         }
     }
 
-    private String commonPackagePath(String package1, String package2){
+    public String commonPackagePath(String package1, String package2){
         if(package1.equals(package2)) return package1;
 
 
@@ -155,7 +154,7 @@ public class AnalyticClassifier {
             try{
                 if(lastMethodCalled.isEmpty()) lastMethodCalled = extractMethodName(invocation);
                 if(lastClassCalled.isEmpty()) lastClassCalled = extractDeclaringClass(invocation);
-                if(highestOrderPackage == null) highestOrderPackage = extractPackage(invocation);
+                if(highestOrderPackage.isEmpty()) highestOrderPackage = extractPackage(invocation);
             } catch (RuntimeException ex){
                 System.err.println("Failed to get executable for " + invocation.toString());
                 System.err.println(ex.getMessage() + "\n");
@@ -170,7 +169,18 @@ public class AnalyticClassifier {
             if(!lastClassCalled.equals(extractDeclaringClass(invocation)) && currentType == UnitTypes.CLASS)
                 currentType = UnitTypes.PACKAGE;
 
-            String commonPath = commonPackagePath(extractPackage(invocation), highestOrderPackage);
+            String currentPackage;
+            try{
+                currentPackage = extractPackage(invocation);
+            } catch (RuntimeException ex){
+                System.err.println("Failed to get package for " + invocation.toString());
+                System.err.println(ex.getMessage() + "\n");
+                hadError = true;
+                return;
+            }
+
+
+            String commonPath = commonPackagePath(currentPackage, highestOrderPackage);
 
             if(!commonPath.equals(highestOrderPackage)){
                 if (commonPath.isEmpty() || commonPath.equals(rootPackage)) currentType = UnitTypes.NOT_UNIT;
@@ -197,7 +207,8 @@ public class AnalyticClassifier {
                 new AnalyticResult(method.getSimpleName(),
                         method.getDeclaringType().getQualifiedName(),
                         scanner.getCurrentType(),
-                        method.prettyprint()));
+                        method.prettyprint(),
+                        scanner.hadError));
     }
 
     public void dumpResults(Path path){
@@ -208,6 +219,7 @@ public class AnalyticClassifier {
                 result.append("Function Name: ").append(analyticResult.Name()).append("\n");
                 result.append("Origin Class: ").append(analyticResult.Origin()).append("\n");
                 result.append("Type: ").append(analyticResult.Type().toString()).append("\n");
+                result.append("Encountered Error: ").append(analyticResult.hadError().toString()).append("\n");
                 result.append("Body:\n").append(analyticResult.body()).append("\n");
                 result.append("\n====================================================================================================\n");
             }
@@ -215,60 +227,6 @@ public class AnalyticClassifier {
             System.err.println(e.getMessage());
             e.printStackTrace();
         }
-
-    }
-    private void classify(CtMethod<?> method){
-
-
-        CtScanner scanner = new CtScanner(){
-            String lastMethodCalled = "";
-            String lastClassCalled = "";
-            String highestOrderPackage = "";
-
-            private enum Type{METHOD, CLASS, PACKAGE, NOT_UNIT}
-            private Type currentType = Type.METHOD;
-
-            private String[] packageIgnoreList = {
-                    "java.",
-                    "org.junit"
-            };
-
-            @Override
-            public <T> void visitCtInvocation(CtInvocation<T> invocation) {
-                if(currentType == Type.NOT_UNIT) return;
-
-                if(Arrays.stream(packageIgnoreList)
-                        .anyMatch(p -> extractMethodName(invocation).startsWith(p))
-                ){
-                    return;
-                }
-
-
-                if(lastMethodCalled.isEmpty()) lastMethodCalled = extractMethodName(invocation);
-                if(lastClassCalled.isEmpty()) lastClassCalled = extractDeclaringClass(invocation);
-                if(highestOrderPackage == null) highestOrderPackage = extractPackage(invocation);
-
-                if(!lastMethodCalled.equals(extractMethodName(invocation)) && currentType == Type.METHOD)
-                    currentType = Type.CLASS;
-                if(!lastClassCalled.equals(extractDeclaringClass(invocation)) && currentType == Type.CLASS)
-                    currentType = Type.PACKAGE;
-
-                if(!extractPackage(invocation).equals(highestOrderPackage)){
-                    String newPath = commonPackagePath(extractPackage(invocation), highestOrderPackage);
-                    if (newPath.isEmpty() || newPath.equals(rootPackage)) currentType = Type.NOT_UNIT;
-                    else highestOrderPackage = newPath;
-                }
-
-            }
-
-            public String getCurrentType() {
-                return currentType.toString();
-            }
-        };
-
-        scanner.scan(method);
-
-
 
     }
 
