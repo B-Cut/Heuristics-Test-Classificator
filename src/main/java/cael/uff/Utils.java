@@ -1,7 +1,13 @@
 package cael.uff;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Utils {
     public static boolean containsCaseInsensitive(String base, String query){
@@ -43,4 +49,20 @@ public class Utils {
 
         return String.join(".", commonPath);
     }
+
+    public static List<String> getM2Contents(){
+        Path m2Dir = Paths.get(System.getProperty("user.home") + "/.m2");
+        try (Stream<Path> stream = Files.walk(m2Dir)) {
+             return stream
+                    .filter(file -> !Files.isDirectory(file))
+                    .map(Path::toAbsolutePath)
+                    .map(Path::toString)
+                    .filter(str -> str.endsWith(".jar"))
+                    .collect(Collectors.toList());
+
+        } catch (IOException e) {
+            throw new RuntimeException("Could not find .m2 directory in user home", e);
+        }
+    }
+
 }
