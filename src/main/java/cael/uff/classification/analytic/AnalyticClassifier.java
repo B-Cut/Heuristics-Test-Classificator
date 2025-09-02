@@ -7,6 +7,8 @@ import cael.uff.classification.FunctionInfo;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.*;
+import spoon.reflect.reference.CtExecutableReference;
+import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.CtScanner;
 
 
@@ -82,8 +84,12 @@ public class AnalyticClassifier {
     }
 
     private String extractPackage(CtInvocation<?> invocation){
+        CtTypeReference<?> declaringType = invocation.getExecutable().getDeclaringType();
+        while (declaringType.getDeclaringType() != null){
+            declaringType = declaringType.getDeclaringType();
+        }
         try{
-            return invocation.getExecutable().getDeclaringType().getPackage().getQualifiedName();
+            return declaringType.getPackage().getQualifiedName();
         } catch (Exception e){
             throw new RuntimeException("Could not extract package name from CtInvocation: " + invocation.toString(), e);
         }
