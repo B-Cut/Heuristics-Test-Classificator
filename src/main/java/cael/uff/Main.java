@@ -6,23 +6,13 @@ package cael.uff;
         - System Tests
 */
 
-import cael.uff.classification.FunctionInfo;
-import cael.uff.classification.analytic.AnalyticClassifier;
-import cael.uff.classification.framework.FrameworkClassifier;
-import cael.uff.classification.heuristics.FilepathClassifier;
-import cael.uff.classification.heuristics.FunctionClassifier;
-import cael.uff.classification.Result;
-import cael.uff.classification.TestPhases;
-import cael.uff.classification.heuristics.HeuristicsClassifier;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.awt.*;
-import java.io.File;
-import java.io.IOException;
+import cael.uff.classification.analytic.AnalyticClassifier;
+import cael.uff.ProjectInfo;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.Map;
+
 
 public class Main {
     private final static String testFolderName = "test";

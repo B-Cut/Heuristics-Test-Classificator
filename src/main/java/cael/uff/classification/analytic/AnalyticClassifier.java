@@ -1,5 +1,6 @@
 package cael.uff.classification.analytic;
 
+import cael.uff.MavenModelFactory;
 import cael.uff.ProjectInfo;
 import cael.uff.Utils;
 import cael.uff.classification.FunctionInfo;
@@ -33,7 +34,7 @@ public class AnalyticClassifier {
 
     private Map<String, List<FunctionInfo>> results = new HashMap<String, List<FunctionInfo>>();
     private final String undefinedPhase = "undefined";
-    private final String rootPackage = ProjectInfo.INSTANCE.getModel().getRootPackage().getQualifiedName();
+    private String rootPackage = "";
 
     private ArrayList<AnalyticResult> analyticResults = new ArrayList<>();
 
@@ -45,8 +46,8 @@ public class AnalyticClassifier {
     }
 
     public void startClassification(){
-        CtModel model = ProjectInfo.INSTANCE.getModel();
-
+        CtModel model = new MavenModelFactory(true).createModel(Path.of(ProjectInfo.INSTANCE.getProjectPath()));
+        this.rootPackage = model.getRootPackage().getQualifiedName();
         CtScanner scanner = new CtScanner(){
             @Override
             public <A extends Annotation> void visitCtAnnotation(CtAnnotation<A> annotation) {
@@ -67,16 +68,15 @@ public class AnalyticClassifier {
     private String extractMethodName(CtInvocation<?> invocation){
         try{
             return extractDeclaringClass(invocation) + '.' + invocation.getExecutable().getSimpleName();
-        } catch (NullPointerException e){
+        } catch (Exception e){
             throw new RuntimeException("Could not extract method name from CtInvocation: " + invocation.toStringDebug(), e);
         }
-
     }
 
     private String extractDeclaringClass(CtInvocation<?> invocation){
         try{
             return invocation.getExecutable().getDeclaringType().getQualifiedName();
-        } catch (NullPointerException e){
+        } catch (Exception e){
             throw new RuntimeException("Could not extract class name from CtInvocation: " + invocation.toStringDebug(), e);
         }
     }
@@ -84,15 +84,13 @@ public class AnalyticClassifier {
     private String extractPackage(CtInvocation<?> invocation){
         try{
             return invocation.getExecutable().getDeclaringType().getPackage().getQualifiedName();
-        } catch (NullPointerException e){
+        } catch (Exception e){
             throw new RuntimeException("Could not extract package name from CtInvocation: " + invocation.toString(), e);
         }
     }
 
     public String commonPackagePath(String package1, String package2){
         if(package1.equals(package2)) return package1;
-
-
 
         String[] longestPath = package1.split("\\.");
         String[] shortestPath = package2.split("\\.");
@@ -214,7 +212,6 @@ public class AnalyticClassifier {
     public void dumpResults(Path path){
         try{
             FileWriter result = new FileWriter(path.toFile());
-
             for (AnalyticResult analyticResult : analyticResults) {
                 result.append("Function Name: ").append(analyticResult.Name()).append("\n");
                 result.append("Origin Class: ").append(analyticResult.Origin()).append("\n");
