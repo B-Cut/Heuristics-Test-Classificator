@@ -27,7 +27,6 @@ WORKDIR /target
 RUN ls
 RUN mvn -N wrapper:wrapper
 RUN ./mvnw dependency:resolve-plugins dependency:go-offline -N -B
-# Continue even on failed build
-RUN ./mvnw clean install; exit 0
+RUN ./mvnw -DskipTests clean install
 
 
