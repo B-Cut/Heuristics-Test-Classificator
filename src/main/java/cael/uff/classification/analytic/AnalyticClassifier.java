@@ -95,31 +95,6 @@ public class AnalyticClassifier {
         }
     }
 
-    public String commonPackagePath(String package1, String package2){
-        if(package1.equals(package2)) return package1;
-
-        String[] longestPath = package1.split("\\.");
-        String[] shortestPath = package2.split("\\.");
-
-        if (shortestPath.length > longestPath.length){
-            String[] temp = longestPath;
-            longestPath = shortestPath;
-            shortestPath = temp;
-        }
-
-        List<String> commonPath = new ArrayList<String>();
-
-        for(int i = 0; i < shortestPath.length; i++){
-            if(shortestPath[i].equals(longestPath[i])){
-                commonPath.add(shortestPath[i]);
-            } else {
-                break;
-            }
-        }
-
-        return String.join(".", commonPath);
-    }
-
     private class UnitScanner extends CtScanner {
         String lastMethodCalled = "";
         String lastClassCalled = "";
@@ -184,7 +159,7 @@ public class AnalyticClassifier {
             }
 
 
-            String commonPath = commonPackagePath(currentPackage, highestOrderPackage);
+            String commonPath = Utils.commonPackagePath(rootPackage, currentPackage, highestOrderPackage);
 
             if(!commonPath.equals(highestOrderPackage)){
                 if (commonPath.isEmpty() || commonPath.equals(rootPackage)) currentType = UnitTypes.NOT_UNIT;

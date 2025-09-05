@@ -23,9 +23,8 @@ public class Utils {
         return false;
     }
 
-    public static String commonPackagePath(String package1, String package2){
+    public static String commonPackagePath(String basePackage, String package1, String package2){
         if(package1.equals(package2)) return package1;
-
 
 
         String[] longestPath = package1.split("\\.");
@@ -47,7 +46,9 @@ public class Utils {
             }
         }
 
-        return String.join(".", commonPath);
+        String ret = String.join(".", commonPath);
+        if(ret.equals(basePackage)) return "";
+        return ret;
     }
 
     public static List<String> getM2Contents(){
