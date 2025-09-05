@@ -4,6 +4,7 @@ import java.nio.file.Path;
 
 public record FunctionInfo(
         String Name,
-        Path originFile
+        Path OriginFile,
+        String Function
 ) {
 }
