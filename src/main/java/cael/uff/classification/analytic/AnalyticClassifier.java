@@ -1,13 +1,14 @@
 package cael.uff.classification.analytic;
 
-import cael.uff.MavenModelFactory;
+import cael.uff.ModelFactories.GradleModelFactory;
+import cael.uff.ModelFactories.MavenModelFactory;
+import cael.uff.ModelFactories.ModelFactory;
 import cael.uff.ProjectInfo;
 import cael.uff.Utils;
 import cael.uff.classification.FunctionInfo;
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.declaration.*;
-import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.visitor.CtScanner;
 
@@ -47,8 +48,15 @@ public class AnalyticClassifier {
         results.put(undefinedPhase, new ArrayList<>());
     }
 
-    public void startClassification(){
-        CtModel model = new MavenModelFactory(true).createModel(Path.of(ProjectInfo.INSTANCE.getProjectPath()));
+    public void startClassification(boolean useGradle){
+        ModelFactory factory;
+        if(useGradle){
+            factory = new GradleModelFactory();
+        } else {
+            factory = new MavenModelFactory();
+        }
+
+        CtModel model = factory .createModel(Path.of(ProjectInfo.INSTANCE.getProjectPath()));
         this.rootPackage = model.getRootPackage().getQualifiedName();
         CtScanner scanner = new CtScanner(){
             @Override
