@@ -1,17 +1,13 @@
-package cael.uff;
+package cael.uff.ModelFactories;
 
-import spoon.Launcher;
 import spoon.MavenLauncher;
 import spoon.reflect.CtModel;
-import spoon.support.compiler.SpoonPom;
 import spoon.support.compiler.jdt.CompilationUnitFilter;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
 
 public class MavenModelFactory implements ModelFactory {
-    private static final int DEFAULT_COMPLIANCE_LEVEL = 8;
+    private static final int DEFAULT_COMPLIANCE_LEVEL = 21;
     private static final boolean DEFAULT_NO_CLASSPATH_MODE = false;
 
     private int complianceLevel;

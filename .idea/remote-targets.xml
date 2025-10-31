@@ -9,13 +9,19 @@
           </option>
           <option name="buildImageConfig">
             <BuildImageConfig>
-              <option name="dockerFile" value="Dockerfile" />
+              <option name="builtImageTag" value="&lt;none&gt;:&lt;none&gt;" />
+              <option name="dockerFile" value="Docker/Dockerfile" />
+              <option name="rebuildEveryTime" value="false" />
             </BuildImageConfig>
           </option>
-          <option name="buildNotPull" value="false" />
+          <option name="containerConfig">
+            <ContainerConfig>
+              <option name="runCliOptions" value="https://github.com/skylot/jadx" />
+            </ContainerConfig>
+          </option>
           <option name="pullImageConfig">
             <PullImageConfig>
-              <option name="tagToPull" value="sha256:3c00050b0a5b98637b6be8283987971b327d2a2a93247e5f0bb11907af0bcbab" />
+              <option name="tagToPull" value="sha256:78117f12ed176175bb8fcbd9fd46b9c050579c7999540f438a3a9ea4bdf5e6ed" />
             </PullImageConfig>
           </option>
         </config>

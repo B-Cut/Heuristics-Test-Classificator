@@ -1,4 +1,4 @@
-package cael.uff;
+package cael.uff.ModelFactories;
 
 import spoon.reflect.CtModel;
 

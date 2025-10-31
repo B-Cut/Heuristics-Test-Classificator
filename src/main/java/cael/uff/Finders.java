@@ -31,7 +31,7 @@ public abstract class Finders {
 
         try(
                 Stream<Path> pathStream = Files
-                        .find(folder, 1, (path, basicFileAttributes) ->
+                        .find(folder, 1000, (path, basicFileAttributes) ->
                                 Utils.containsCaseInsensitive(path.getFileName().toString(), substring))
         ){
             paths = pathStream.toList();
